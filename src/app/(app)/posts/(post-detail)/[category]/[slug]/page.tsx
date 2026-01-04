@@ -82,6 +82,9 @@ export const generateMetadata = async ({
         description,
         card: 'summary_large_image',
       },
+      alternates: {
+        canonical: `https://xming.cyou/posts/${categorySlug}/${slug}`,
+      },
       category: categorySlug,
     } satisfies Metadata
   } catch {
