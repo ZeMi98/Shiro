@@ -137,29 +137,40 @@ const SearchPanelImpl = () => {
           return
         }
 
-        const _list: SearchListType[] = data.raw.hits.map((item: any) => {
-          const url = item.url || item.url_without_anchor
-          const title =
-            item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
-          const subtitle = item.hierarchy?.lvl2 || ''
+        // 用 Map 去重，只保留每个 URL 的第一个结果
+        const uniqueMap = new Map<string, SearchListType>()
 
-          // 从 URL 判断类型
-          let displaySubtitle = subtitle
-          if (url.includes('/posts/')) {
-            displaySubtitle = subtitle || '文章'
-          } else if (url.includes('/notes/')) {
-            displaySubtitle = subtitle || '手记'
-          } else {
-            displaySubtitle = subtitle || '页面'
-          }
+        data.raw.hits.forEach((item: any) => {
+          // 使用不带锚点的 URL 作为唯一标识
+          const url = item.url_without_anchor || item.url
 
-          return {
-            title,
-            subtitle: displaySubtitle,
-            id: item.object_id || url,
-            url,
+          // 如果这个 URL 还没有被添加，才添加
+          if (!uniqueMap.has(url)) {
+            const title =
+              item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
+            const subtitle = item.hierarchy?.lvl2 || ''
+
+            // 从 URL 判断类型
+            let displaySubtitle = ''
+            if (url.includes('/posts/')) {
+              displaySubtitle = '文章'
+            } else if (url.includes('/notes/')) {
+              displaySubtitle = '手记'
+            } else {
+              displaySubtitle = '页面'
+            }
+
+            uniqueMap.set(url, {
+              title,
+              subtitle: displaySubtitle,
+              id: item.object_id || url,
+              url,
+            })
           }
         })
+
+        // 转换为数组
+        const _list = Array.from(uniqueMap.values())
 
         setCurrentSelect(0)
         return _list
