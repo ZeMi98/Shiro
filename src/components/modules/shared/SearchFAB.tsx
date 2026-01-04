@@ -133,40 +133,34 @@ const SearchPanelImpl = () => {
     },
     select: useCallback(
       (data: any) => {
-        if (!data?.data) {
+        if (!data?.raw?.hits) {
           return
         }
 
-        const _list: SearchListType[] = data?.data.map((item: any) => {
-          switch (item.type) {
-            case 'post': {
-              return {
-                title: item.title,
-                subtitle: item.category.name,
-                id: item.id,
-                url: `/posts/${item.category.slug}/${item.slug}`,
-              }
-            }
-            case 'note': {
-              return {
-                title: item.title,
-                subtitle: '手记',
-                id: item.id,
-                url: `/notes/${item.nid}`,
-              }
-            }
-            case 'page': {
-              return {
-                title: item.title,
-                subtitle: '页面',
-                id: item.id,
-                url: `/${item.slug}`,
-              }
-            }
+        const _list: SearchListType[] = data.raw.hits.map((item: any) => {
+          const url = item.url || item.url_without_anchor
+          const title = item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
+          const subtitle = item.hierarchy?.lvl2 || ''
+          
+          // 从 URL 判断类型
+          let displaySubtitle = subtitle
+          if (url.includes('/posts/')) {
+            displaySubtitle = subtitle || '文章'
+          } else if (url.includes('/notes/')) {
+            displaySubtitle = subtitle || '手记'
+          } else {
+            displaySubtitle = subtitle || '页面'
+          }
+
+          return {
+            title: title,
+            subtitle: displaySubtitle,
+            id: item.object_id || url,
+            url: url,
           }
         })
+        
         setCurrentSelect(0)
-
         return _list
       },
       [setCurrentSelect],
@@ -311,7 +305,7 @@ const SearchPanelImpl = () => {
         ) : (
           <div />
         )}
-        <a
+        
           href="https://www.algolia.com"
           target="_blank"
           rel="noopener noreferrer"
