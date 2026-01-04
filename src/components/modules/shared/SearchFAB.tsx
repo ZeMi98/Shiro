@@ -139,9 +139,10 @@ const SearchPanelImpl = () => {
 
         const _list: SearchListType[] = data.raw.hits.map((item: any) => {
           const url = item.url || item.url_without_anchor
-          const title = item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
+          const title =
+            item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
           const subtitle = item.hierarchy?.lvl2 || ''
-          
+
           // 从 URL 判断类型
           let displaySubtitle = subtitle
           if (url.includes('/posts/')) {
@@ -153,13 +154,13 @@ const SearchPanelImpl = () => {
           }
 
           return {
-            title: title,
+            title,
             subtitle: displaySubtitle,
             id: item.object_id || url,
-            url: url,
+            url,
           }
         })
-        
+
         setCurrentSelect(0)
         return _list
       },
@@ -305,7 +306,7 @@ const SearchPanelImpl = () => {
         ) : (
           <div />
         )}
-        
+        <a
           href="https://www.algolia.com"
           target="_blank"
           rel="noopener noreferrer"
