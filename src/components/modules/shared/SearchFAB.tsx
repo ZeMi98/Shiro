@@ -133,42 +133,31 @@ const SearchPanelImpl = () => {
     },
     select: useCallback(
       (data: any) => {
-        if (!data?.raw?.hits || data.raw.hits.length === 0) {
-          return []
+        if (!data?.raw?.hits) {
+          return
         }
 
-        // 用 Set 来追踪已经添加的 URL
-        const seenUrls = new Set<string>()
-        const _list: SearchListType[] = []
+        const _list: SearchListType[] = data.raw.hits.map((item: any) => {
+          const url = item.url || item.url_without_anchor
+          const title =
+            item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
+          const subtitle = item.hierarchy?.lvl2 || ''
 
-        data.raw.hits.forEach((item: any) => {
-          // 使用不带锚点的 URL 作为唯一标识
-          const cleanUrl = item.url_without_anchor
+          // 从 URL 判断类型
+          let displaySubtitle = subtitle
+          if (url.includes('/posts/')) {
+            displaySubtitle = subtitle || '文章'
+          } else if (url.includes('/notes/')) {
+            displaySubtitle = subtitle || '手记'
+          } else {
+            displaySubtitle = subtitle || '页面'
+          }
 
-          // 如果这个 URL 还没有被添加，才添加
-          if (!seenUrls.has(cleanUrl)) {
-            seenUrls.add(cleanUrl)
-
-            // 优先使用 lvl1，如果没有则使用 lvl0
-            const title =
-              item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
-
-            // 从 URL 判断类型
-            let displaySubtitle = ''
-            if (cleanUrl.includes('/posts/')) {
-              displaySubtitle = '文章'
-            } else if (cleanUrl.includes('/notes/')) {
-              displaySubtitle = '手记'
-            } else {
-              displaySubtitle = '页面'
-            }
-
-            _list.push({
-              title,
-              subtitle: displaySubtitle,
-              id: item.object_id || cleanUrl,
-              url: cleanUrl,
-            })
+          return {
+            title,
+            subtitle: displaySubtitle,
+            id: item.object_id || url,
+            url,
           }
         })
 
