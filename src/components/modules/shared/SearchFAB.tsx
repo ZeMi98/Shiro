@@ -133,44 +133,44 @@ const SearchPanelImpl = () => {
     },
     select: useCallback(
       (data: any) => {
-        if (!data?.raw?.hits) {
-          return
+        if (!data?.raw?.hits || data.raw.hits.length === 0) {
+          return []
         }
 
-        // 用 Map 去重，只保留每个 URL 的第一个结果
-        const uniqueMap = new Map<string, SearchListType>()
+        // 用 Set 来追踪已经添加的 URL
+        const seenUrls = new Set<string>()
+        const _list: SearchListType[] = []
 
         data.raw.hits.forEach((item: any) => {
           // 使用不带锚点的 URL 作为唯一标识
-          const url = item.url_without_anchor || item.url
+          const cleanUrl = item.url_without_anchor
 
           // 如果这个 URL 还没有被添加，才添加
-          if (!uniqueMap.has(url)) {
+          if (!seenUrls.has(cleanUrl)) {
+            seenUrls.add(cleanUrl)
+
+            // 优先使用 lvl1，如果没有则使用 lvl0
             const title =
               item.hierarchy?.lvl1 || item.hierarchy?.lvl0 || 'Untitled'
-            const subtitle = item.hierarchy?.lvl2 || ''
 
             // 从 URL 判断类型
             let displaySubtitle = ''
-            if (url.includes('/posts/')) {
+            if (cleanUrl.includes('/posts/')) {
               displaySubtitle = '文章'
-            } else if (url.includes('/notes/')) {
+            } else if (cleanUrl.includes('/notes/')) {
               displaySubtitle = '手记'
             } else {
               displaySubtitle = '页面'
             }
 
-            uniqueMap.set(url, {
+            _list.push({
               title,
               subtitle: displaySubtitle,
-              id: item.object_id || url,
-              url,
+              id: item.object_id || cleanUrl,
+              url: cleanUrl,
             })
           }
         })
-
-        // 转换为数组
-        const _list = Array.from(uniqueMap.values())
 
         setCurrentSelect(0)
         return _list
