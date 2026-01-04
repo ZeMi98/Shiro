@@ -72,6 +72,10 @@ export const TocItem: FC<{
         (e: MouseEvent) => {
           e.preventDefault()
 
+          // Update URL hash to match the actual heading ID
+          const { state } = history
+          history.replaceState(state, '', `#${anchorId}`)
+          
           onClick?.(index, $heading, anchorId)
         },
         [onClick, index, $heading, anchorId],

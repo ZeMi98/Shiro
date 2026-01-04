@@ -5,6 +5,7 @@ import type { FC, ReactNode } from 'react'
 import { memo, useCallback, useMemo } from 'react'
 
 import { isServerSide } from '~/lib/env'
+import { springScrollToElement } from '~/lib/scroller'
 import { useAppConfigSelector } from '~/providers/root/aggregation-data-provider'
 
 import { MagneticHoverEffect } from '../effect/MagneticHoverEffect'
@@ -42,6 +43,36 @@ export const MarkdownLink: FC<{
 
   const handleRedirect = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
+      // Handle anchor links (starting with #)
+      if (href.startsWith('#')) {
+        e.preventDefault()
+        const targetId = href.slice(1)
+        
+        // Try to find the element with the exact ID first
+        let targetElement = document.getElementById(targetId)
+        
+        // If not found, try to find elements with the pattern "number__targetId"
+        if (!targetElement) {
+          const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
+          for (const heading of headings) {
+            if (heading.id.endsWith(`__${targetId}`)) {
+              targetElement = heading as HTMLElement
+              break
+            }
+          }
+        }
+        
+        if (targetElement) {
+          // Update URL hash
+          const { state } = history
+          history.replaceState(state, '', `#${targetElement.id}`)
+          
+          // Scroll to the element
+          springScrollToElement(targetElement, -100)
+        }
+        return
+      }
+
       const toUrlParser = new URL(href)
       if (!isSelfUrl) {
         return
