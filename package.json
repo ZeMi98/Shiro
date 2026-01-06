@@ -71,6 +71,7 @@
     "jsondiffpatch": "^0.7.3",
     "katex": "^0.16.22",
     "kbar": "0.1.0-beta.45",
+    "live2d-widget": "^3.1.4",
     "markdown-escape": "2.0.0",
     "markdown-to-jsx": "npm:@innei/markdown-to-jsx-yet@7.7.7-11",
     "marked": "15.0.12",

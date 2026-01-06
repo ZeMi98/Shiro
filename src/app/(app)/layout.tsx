@@ -1,10 +1,13 @@
 /* eslint-disable no-console */
 
+import '~/styles/live2d.css'
+
 import type { Metadata, Viewport } from 'next'
 import { PublicEnvScript } from 'next-runtime-env'
 import type { PropsWithChildren } from 'react'
 
 import PKG from '~/../package.json'
+import { BackgroundLayer } from '~/components/common/BackgroundLayer'
 import { Global } from '~/components/common/Global'
 import { HydrationEndDetector } from '~/components/common/HydrationEndDetector'
 import { SyncServerTime } from '~/components/common/SyncServerTime'
@@ -185,6 +188,8 @@ export default async function RootLayout(props: PropsWithChildren) {
             <div data-theme>
               <Root>{children}</Root>
             </div>
+
+            <BackgroundLayer />
 
             <TocAutoScroll />
             <SearchPanelWithHotKey />

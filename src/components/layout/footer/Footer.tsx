@@ -6,7 +6,13 @@ export const Footer = () => {
   return (
     <footer
       data-hide-print
-      className="relative z-[1] mt-32 border-t border-x-uk-separator-opaque-light bg-[var(--root-bg)] py-6 text-base-content/80 dark:border-uk-separator-opaque-dark"
+      className={
+        'relative z-[1] mt-32 border-t border-x-uk-separator-opaque-light bg-themed-bg_opacity py-6 text-base-content/80 [-webkit-backdrop-filter:saturate(180%)_blur(20px)] [backdrop-filter:saturate(180%)_blur(20px)] dark:border-uk-separator-opaque-dark'
+      }
+      style={{
+        // keep a subtle semi-transparent feel similar to header
+        opacity: 0.78,
+      }}
     >
       <div className="px-4 sm:px-8">
         <div className="relative mx-auto max-w-7xl lg:px-8">

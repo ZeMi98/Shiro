@@ -1,0 +1,25 @@
+/* Background / Live2D styles with theme variables */
+:root {
+    /* particle and line default (light theme) */
+    /* global article opacity (can be overridden by theme or inline) */
+    --article-opacity: 0.92;
+    --bg-overlay: linear-gradient(180deg, rgba(250, 250, 250, 0.02), rgba(255, 255, 255, 0));
+    --particle-color: rgba(40, 40, 40, 0.85);
+    --particle-line-color: rgba(40, 40, 40, 0.06);
+    --live2d-placeholder-bg: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme='dark'] {
+    --bg-overlay: linear-gradient(180deg, rgba(10, 10, 10, 0.02), rgba(0, 0, 0, 0));
+    --particle-color: rgba(255, 255, 255, 0.9);
+    --particle-line-color: rgba(255, 255, 255, 0.06);
+    --live2d-placeholder-bg: rgba(255, 255, 255, 0.03);
+}
+
+.background-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--bg-overlay);
+}

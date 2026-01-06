@@ -9,7 +9,7 @@ export const Transition = createTransitionView({
   },
   to: {
     y: 0,
-    opacity: 1,
+    opacity: 0.88,
   },
   preset: {
     type: 'spring',

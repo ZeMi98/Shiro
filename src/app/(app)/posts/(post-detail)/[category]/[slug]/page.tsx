@@ -1,8 +1,10 @@
 import type { ModelWithLiked, PostModel } from '@mx-space/api-client'
 import type { Metadata } from 'next'
 
+import { Transition } from '~/app/(app)/notes/[id]/Transition'
 import { AckRead } from '~/components/common/AckRead'
 import { ClientOnly } from '~/components/common/ClientOnly'
+import { Paper } from '~/components/layout/container/Paper'
 import { CommentAreaRootLazy } from '~/components/modules/comment'
 import {
   PostActionAside,
@@ -116,24 +118,28 @@ const PostPage = ({ data }: { data: ModelWithLiked<PostModel> }) => {
           <PostRelated infoText="阅读此文章之前，你可能需要首先阅读以下的文章才能更好的理解上下文。" />
         </div>
         <WrappedElementProvider eoaDetect>
-          <ReadIndicatorForMobile />
+          <Transition>
+            <Paper>
+              <ReadIndicatorForMobile />
 
-          <PostMarkdownImageRecordProvider>
-            <MarkdownSelection>
-              <article className="prose">
-                <div className="sr-only">
-                  <PostTitle />
-                </div>
-                <PostMarkdown />
-              </article>
-            </MarkdownSelection>
-          </PostMarkdownImageRecordProvider>
+              <PostMarkdownImageRecordProvider>
+                <MarkdownSelection>
+                  <article className="prose" style={{ opacity: 0.92 }}>
+                    <div className="sr-only">
+                      <PostTitle />
+                    </div>
+                    <PostMarkdown />
+                  </article>
+                </MarkdownSelection>
+              </PostMarkdownImageRecordProvider>
 
-          <LayoutRightSidePortal>
-            <ArticleRightAside>
-              <PostActionAside />
-            </ArticleRightAside>
-          </LayoutRightSidePortal>
+              <LayoutRightSidePortal>
+                <ArticleRightAside>
+                  <PostActionAside />
+                </ArticleRightAside>
+              </LayoutRightSidePortal>
+            </Paper>
+          </Transition>
         </WrappedElementProvider>
       </div>
       <ClientOnly>
