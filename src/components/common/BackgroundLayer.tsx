@@ -1,5 +1,7 @@
 'use client'
 
+// @ts-ignore
+import * as mod from 'live2d-widget'
 import * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -59,9 +61,9 @@ export function BackgroundLayer(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const canvas = canvasRef.current
+    const canvas = canvasRef.current!
     if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d')!
     if (!ctx) return
 
     let width = 0
@@ -169,7 +171,6 @@ export function BackgroundLayer(): JSX.Element {
       if (!enabledLive2d || initedLive2d || loaded) return
       loaded = true
       try {
-        const mod = await import('live2d-widget')
         const initFunc =
           (mod as any).init ||
           (mod as any).default?.init ||
@@ -227,7 +228,7 @@ export function BackgroundLayer(): JSX.Element {
   }, [enabledLive2d, initedLive2d])
 
   useEffect(() => {
-    const container = containerRef.current
+    const container = containerRef.current!
     const canvas = canvasRef.current
     if (!container) return
 
