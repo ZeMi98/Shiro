@@ -3,8 +3,6 @@
 import * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 
-type Vec = { x: number; y: number }
-
 function isTouchDevice(): boolean {
   try {
     return (
@@ -130,6 +128,24 @@ export function BackgroundLayer(): JSX.Element {
 
     resize()
     initParticles()
+    // Remove server-rendered placeholders once the client canvas is ready
+    function removeSSRPlaceholders(): void {
+      try {
+        const placeholders = document.querySelectorAll(
+          '.background-layer[data-ssr]',
+        )
+        placeholders.forEach((el) => {
+          // only remove placeholders that don't contain a canvas
+          if (!el.querySelector || !el.querySelector('canvas')) {
+            el.parentNode && el.parentNode.removeChild(el)
+          }
+        })
+      } catch {
+        // ignore any DOM errors
+      }
+    }
+
+    removeSSRPlaceholders()
     window.addEventListener('resize', resize)
     rafRef.current = requestAnimationFrame(step)
 

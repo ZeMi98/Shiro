@@ -159,6 +159,12 @@ export default async function RootLayout(props: PropsWithChildren) {
       <html lang="zh-CN" className="noise themed" suppressHydrationWarning>
         <head>
           <PublicEnvScript />
+          {/* Ensure initial theme is applied before React hydration to avoid flash */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark')}else if(t==='light'){document.documentElement.setAttribute('data-theme','light')}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.setAttribute('data-theme','dark')}else{document.documentElement.setAttribute('data-theme','light')}}catch(e){}})();`,
+            }}
+          />
           <Global />
           <SayHi />
           <HydrationEndDetector />
@@ -190,6 +196,11 @@ export default async function RootLayout(props: PropsWithChildren) {
               <Root>{children}</Root>
             </div>
 
+            {/* Server-rendered placeholder to avoid FOUC when the client-only
+              BackgroundLayer mounts and paints the canvas. This ensures the
+              background overlay is present during SSR and prevents a visual
+              flash on refresh. */}
+            <div className="background-layer" data-ssr="true" aria-hidden />
             <BackgroundLayer />
 
             <Live2DWidget />

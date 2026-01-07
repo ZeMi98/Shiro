@@ -1,18 +1,12 @@
 'use client'
 
+import { useTheme } from 'next-themes'
 import * as React from 'react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-function isTouchDevice(): boolean {
-  try {
-    return (
-      typeof window !== 'undefined' &&
-      ('ontouchstart' in window || navigator.maxTouchPoints > 0)
-    )
-  } catch {
-    return false
-  }
-}
+import { isHydrationEnded } from '~/components/common/HydrationEndDetector'
+import { transitionViewIfSupported } from '~/lib/dom'
+import type { Live2DConstructor, Live2DInstance } from '~/types/live2d'
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -53,19 +47,16 @@ function loadCSS(href: string): void {
 }
 
 export default function Live2DWidget(): JSX.Element | null {
-  const pioRef = useRef<any | null>(null)
+  const { theme, setTheme } = useTheme()
+  const pioRef = useRef<Live2DInstance | null>(null)
   const initedRef = useRef(false)
+  // keep canvas present in DOM to satisfy legacy scripts, but keep it hidden
+  // until the Live2D instance is fully initialized to avoid visual flash
+  const [canvasPresent] = useState(true)
+  const [pioVisible, setPioVisible] = useState(false)
 
   useEffect(() => {
     if (initedRef.current) return
-
-    if (
-      isTouchDevice() ||
-      (typeof window !== 'undefined' && window.innerWidth < 768)
-    ) {
-      // Mobile: do not initialize by default
-      return
-    }
 
     let mounted = true
 
@@ -82,49 +73,116 @@ export default function Live2DWidget(): JSX.Element | null {
         // debug: expose constructor if present
         console.debug(
           'Live2D: Paul ctor on window ->',
-          (window as any).Paul_Pio ||
-            (window as any).PaulPio ||
-            (window as any).Pio,
+          window.Paul_Pio || window.PaulPio || window.Pio,
         )
-        ;(window as any).__PAUL_PIO =
-          (window as any).Paul_Pio ||
-          (window as any).PaulPio ||
-          (window as any).Pio
+        window.__PAUL_PIO = window.Paul_Pio || window.PaulPio || window.Pio
 
         if (!mounted) return
 
-        const Paul =
-          (window as any).Paul_Pio ||
-          (window as any).PaulPio ||
-          (window as any).Pio ||
-          undefined
+        const Paul: Live2DConstructor | undefined =
+          window.Paul_Pio || window.PaulPio || window.Pio
         if (!Paul) {
           console.warn('Live2D: Paul_Pio constructor not found on window')
           return
         }
 
         // use actual model path from public/assets/live2d
-        const modelPath = '/assets/live2d/models/pio/model.json'
+        const modelPaths = [
+          '/assets/live2d/models/pio/model.json',
+          '/assets/live2d/models/neptune/model.json',
+          '/assets/live2d/models/mei/model.json',
+          // 可以添加更多模型路径
+          // '/assets/live2d/models/model2/model.json',
+          // '/assets/live2d/models/model3/model.json',
+        ]
+
+        // wait until page hydration/initial animations settled (HydrationEndDetector)
+        // to avoid competing with continuous page animations
+        const waitForHydrationEnd = async (timeout = 10000) => {
+          const start = Date.now()
+          while (!isHydrationEnded()) {
+            if (Date.now() - start > timeout) break
+            // poll at reasonable interval
+             
+            await new Promise((r) => setTimeout(r, 200))
+          }
+        }
+
+        await waitForHydrationEnd()
+
+        // ensure one frame for potential DOM updates (canvas already present)
+        await new Promise((res) => requestAnimationFrame(res))
+
+        // capture baseline blank image of canvas (if present) to detect first frame
+        const canvasEl = document.getElementById(
+          'pio',
+        ) as HTMLCanvasElement | null
+        let blankData: string | null = null
+        try {
+          if (canvasEl) blankData = canvasEl.toDataURL()
+        } catch {}
 
         const pio = new Paul({
           mode: 'fixed',
           hidden: true,
           content: {
             welcome: ['欢迎！'],
+            close: 'QWQ 下次再见吧~',
+            skin: ['想看看我的新衣服吗？', '新衣服真漂亮~'],
+            link: `${window.location.origin  }/about`,
           },
-          model: [modelPath],
+          tips: true,
+          model: modelPaths,
+          night: () => {
+            const currentTheme =
+              document.documentElement.dataset.theme
+            const nextTheme = currentTheme === 'dark' ? 'light' : 'dark'
+
+            // 移除 flushSync，直接调用
+            transitionViewIfSupported(() => {
+              setTheme(nextTheme)
+            })
+          },
         })
 
         // debug: expose instance for console inspection
-        ;(window as any).__PIO_INSTANCE = pio
+        window.__PIO_INSTANCE = pio
         console.debug('Live2D: created pio instance ->', pio)
 
         pioRef.current = pio
         initedRef.current = true
+        // show canvas once pio finished initialization AND the canvas has meaningful pixels
+        try {
+          const canvasEl2 = document.getElementById(
+            'pio',
+          ) as HTMLCanvasElement | null
+          if (canvasEl2 && blankData) {
+            const startPoll = Date.now()
+            const timeout = 10000
+            const poll = async () => {
+              try {
+                const data = canvasEl2.toDataURL()
+                if (data !== blankData || Date.now() - startPoll > timeout) {
+                  setPioVisible(true)
+                } else {
+                  setTimeout(poll, 200)
+                }
+              } catch {
+                // on any error, stop polling and show to avoid hiding forever
+                setPioVisible(true)
+              }
+            }
+            poll()
+          } else {
+            setPioVisible(true)
+          }
+        } catch {
+          setPioVisible(true)
+        }
         console.debug('Live2D: initialized', pio)
       } catch (err) {
         // Don't block app on failure
-         
+
         console.error('Live2D init error:', err)
       }
     }
@@ -146,11 +204,21 @@ export default function Live2DWidget(): JSX.Element | null {
     }
   }, [])
 
-  // render the expected container for Pio; it's harmless if Pio doesn't use it
+  // render the expected container for Pio; hide whole container until ready
   return (
-    <div className="pio-container left" style={{ zIndex: 60 }}>
+    <div
+      className="pio-container left"
+      style={{ zIndex: 60, display: pioVisible ? undefined : 'none' }}
+    >
       <div className="pio-action" />
-      <canvas id="pio" width={280} height={250} />
+      {canvasPresent && (
+        <canvas
+          id="pio"
+          width={280}
+          height={250}
+          style={{ display: pioVisible ? undefined : 'none' }}
+        />
+      )}
     </div>
   )
 }
