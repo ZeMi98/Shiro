@@ -10,6 +10,7 @@ import PKG from '~/../package.json'
 import { BackgroundLayer } from '~/components/common/BackgroundLayer'
 import { Global } from '~/components/common/Global'
 import { HydrationEndDetector } from '~/components/common/HydrationEndDetector'
+import Live2DWidget from '~/components/common/Live2DWidget'
 import { SyncServerTime } from '~/components/common/SyncServerTime'
 import { Root } from '~/components/layout/root/Root'
 import { AccentColorStyleInjector } from '~/components/modules/shared/AccentColorStyleInjector'
@@ -190,6 +191,8 @@ export default async function RootLayout(props: PropsWithChildren) {
             </div>
 
             <BackgroundLayer />
+
+            <Live2DWidget />
 
             <TocAutoScroll />
             <SearchPanelWithHotKey />
