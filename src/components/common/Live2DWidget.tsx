@@ -88,8 +88,8 @@ export default function Live2DWidget(): JSX.Element | null {
 
         // use actual model path from public/assets/live2d
         const modelPaths = [
-          '/assets/live2d/models/pio/model.json',
           '/assets/live2d/models/neptune/model.json',
+          '/assets/live2d/models/pio/model.json',
           // 可以添加更多模型路径
           // '/assets/live2d/models/model2/model.json',
           // '/assets/live2d/models/model3/model.json',

@@ -22,6 +22,19 @@ var Paul_Pio = function (prop) {
     root: document.location.protocol + '//' + document.location.hostname + '/',
   }
 
+  // 恢复上次选择的模型索引（如果存在），存在越界时忽略
+  try {
+    const saved = localStorage.getItem('posterGirlIdol')
+    if (saved !== null) {
+      const n = parseInt(saved, 10)
+      if (!Number.isNaN(n) && n >= 0) {
+        current.idol = n
+      }
+    }
+  } catch (e) {
+    // 忽略 localStorage 访问错误
+  }
+
   // 工具通用函数
   const tools = {
     // 创建内容
@@ -63,6 +76,11 @@ var Paul_Pio = function (prop) {
     // 更换模型
     idol: () => {
       current.idol < prop.model.length - 1 ? current.idol++ : (current.idol = 0)
+      try {
+        localStorage.setItem('posterGirlIdol', String(current.idol))
+      } catch (e) {
+        // ignore
+      }
 
       return current.idol
     },
@@ -294,7 +312,12 @@ var Paul_Pio = function (prop) {
     if (!(prop.hidden && tools.isMobile())) {
       if (!noModel) {
         action.welcome()
-        loadlive2d('pio', prop.model[0])
+        // 使用保存的索引加载模型，超出范围则回退到 0
+        const idx =
+          current.idol >= 0 && current.idol < prop.model.length
+            ? current.idol
+            : 0
+        loadlive2d('pio', prop.model[idx])
       }
 
       switch (prop.mode) {
