@@ -47,7 +47,7 @@ function loadCSS(href: string): void {
 }
 
 export default function Live2DWidget(): JSX.Element | null {
-  const { theme, setTheme } = useTheme()
+  const { setTheme } = useTheme()
   const pioRef = useRef<Live2DInstance | null>(null)
   const initedRef = useRef(false)
   // keep canvas present in DOM to satisfy legacy scripts, but keep it hidden
@@ -103,7 +103,7 @@ export default function Live2DWidget(): JSX.Element | null {
           while (!isHydrationEnded()) {
             if (Date.now() - start > timeout) break
             // poll at reasonable interval
-             
+
             await new Promise((r) => setTimeout(r, 200))
           }
         }
@@ -129,13 +129,12 @@ export default function Live2DWidget(): JSX.Element | null {
             welcome: ['欢迎！'],
             close: 'QWQ 下次再见吧~',
             skin: ['想看看我的新衣服吗？', '新衣服真漂亮~'],
-            link: `${window.location.origin  }/about`,
+            link: `${window.location.origin}/about`,
           },
           tips: true,
           model: modelPaths,
           night: () => {
-            const currentTheme =
-              document.documentElement.dataset.theme
+            const currentTheme = document.documentElement.dataset.theme
             const nextTheme = currentTheme === 'dark' ? 'light' : 'dark'
 
             // 移除 flushSync，直接调用
