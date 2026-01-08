@@ -42,7 +42,7 @@
 .pio-container.hidden #pio,
 .pio-container.hidden .pio-action,
 .pio-container.hidden .pio-dialog{
-    display: none;
+    display: block;
 }
 
 .pio-container.left{ left: 0 }

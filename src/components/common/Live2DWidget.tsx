@@ -10,7 +10,6 @@ import type { Live2DConstructor, Live2DInstance } from '~/types/live2d'
 
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    // in development, append timestamp to bust cache
     const dev = process.env.NODE_ENV !== 'production'
     const finalSrc = dev
       ? `${src}${src.includes('?') ? '&' : '?'}cb=${Date.now()}`
@@ -22,7 +21,6 @@ function loadScript(src: string): Promise<void> {
       return resolve()
     const s = document.createElement('script')
     s.src = finalSrc
-    // ensure scripts execute in insertion order for deterministic init
     s.async = false
     s.onload = () => resolve()
     s.onerror = () => reject(new Error(`Failed to load script: ${src}`))
@@ -50,10 +48,9 @@ export default function Live2DWidget(): JSX.Element | null {
   const { setTheme } = useTheme()
   const pioRef = useRef<Live2DInstance | null>(null)
   const initedRef = useRef(false)
-  // keep canvas present in DOM to satisfy legacy scripts, but keep it hidden
-  // until the Live2D instance is fully initialized to avoid visual flash
   const [canvasPresent] = useState(true)
   const [pioVisible, setPioVisible] = useState(false)
+  const [showAvatar, setShowAvatar] = useState(false)
 
   useEffect(() => {
     if (initedRef.current) return
@@ -62,19 +59,10 @@ export default function Live2DWidget(): JSX.Element | null {
 
     async function init() {
       try {
-        // load local assets from public/assets/live2d/static
-        console.debug(
-          'Live2D: loading CSS and scripts from /assets/live2d/static',
-        )
         loadCSS('/assets/live2d/static/pio.css')
         await loadScript('/assets/live2d/static/l2d.js')
         await loadScript('/assets/live2d/static/pio.js')
 
-        // debug: expose constructor if present
-        console.debug(
-          'Live2D: Paul ctor on window ->',
-          window.Paul_Pio || window.PaulPio || window.Pio,
-        )
         window.__PAUL_PIO = window.Paul_Pio || window.PaulPio || window.Pio
 
         if (!mounted) return
@@ -86,33 +74,23 @@ export default function Live2DWidget(): JSX.Element | null {
           return
         }
 
-        // use actual model path from public/assets/live2d
         const modelPaths = [
           '/assets/live2d/models/neptune/model.json',
           '/assets/live2d/models/pio/model.json',
-          // 可以添加更多模型路径
-          // '/assets/live2d/models/model2/model.json',
-          // '/assets/live2d/models/model3/model.json',
+          '/assets/live2d/models/kesyoban/model.json',
         ]
 
-        // wait until page hydration/initial animations settled (HydrationEndDetector)
-        // to avoid competing with continuous page animations
         const waitForHydrationEnd = async (timeout = 10000) => {
           const start = Date.now()
           while (!isHydrationEnded()) {
             if (Date.now() - start > timeout) break
-            // poll at reasonable interval
-
             await new Promise((r) => setTimeout(r, 200))
           }
         }
 
         await waitForHydrationEnd()
-
-        // ensure one frame for potential DOM updates (canvas already present)
         await new Promise((res) => requestAnimationFrame(res))
 
-        // capture baseline blank image of canvas (if present) to detect first frame
         const canvasEl = document.getElementById(
           'pio',
         ) as HTMLCanvasElement | null
@@ -135,57 +113,58 @@ export default function Live2DWidget(): JSX.Element | null {
           night: () => {
             const currentTheme = document.documentElement.dataset.theme
             const nextTheme = currentTheme === 'dark' ? 'light' : 'dark'
-
-            // 移除 flushSync，直接调用
             transitionViewIfSupported(() => {
               setTheme(nextTheme)
             })
           },
         })
 
-        // debug: expose instance for console inspection
         window.__PIO_INSTANCE = pio
         console.debug('Live2D: created pio instance ->', pio)
 
         pioRef.current = pio
         initedRef.current = true
-        // show canvas once pio finished initialization AND the canvas has meaningful pixels
-        try {
-          const canvasEl2 = document.getElementById(
-            'pio',
-          ) as HTMLCanvasElement | null
-          if (canvasEl2 && blankData) {
-            const startPoll = Date.now()
-            const timeout = 10000
-            const poll = async () => {
-              try {
-                const data = canvasEl2.toDataURL()
-                if (data !== blankData || Date.now() - startPoll > timeout) {
+
+        // Check if should show avatar based on localStorage
+        const posterGirlStatus = localStorage.getItem('posterGirl')
+        if (posterGirlStatus === '0') {
+          setShowAvatar(true)
+          setPioVisible(false)
+        } else {
+          try {
+            const canvasEl2 = document.getElementById(
+              'pio',
+            ) as HTMLCanvasElement | null
+            if (canvasEl2 && blankData) {
+              const startPoll = Date.now()
+              const timeout = 10000
+              const poll = async () => {
+                try {
+                  const data = canvasEl2.toDataURL()
+                  if (data !== blankData || Date.now() - startPoll > timeout) {
+                    setPioVisible(true)
+                  } else {
+                    setTimeout(poll, 200)
+                  }
+                } catch {
                   setPioVisible(true)
-                } else {
-                  setTimeout(poll, 200)
                 }
-              } catch {
-                // on any error, stop polling and show to avoid hiding forever
-                setPioVisible(true)
               }
+              poll()
+            } else {
+              setPioVisible(true)
             }
-            poll()
-          } else {
+          } catch {
             setPioVisible(true)
           }
-        } catch {
-          setPioVisible(true)
         }
+
         console.debug('Live2D: initialized', pio)
       } catch (err) {
-        // Don't block app on failure
-
         console.error('Live2D init error:', err)
       }
     }
 
-    // delay init slightly to avoid blocking first paint
     const t = window.setTimeout(init, 600)
 
     return () => {
@@ -196,17 +175,47 @@ export default function Live2DWidget(): JSX.Element | null {
         if (p && typeof p.destroy === 'function') {
           p.destroy()
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
   }, [])
 
-  // render the expected container for Pio; hide whole container until ready
+  // Handle avatar click to reopen Live2D
+  const handleAvatarClick = () => {
+    setShowAvatar(false)
+    setPioVisible(true)
+    localStorage.setItem('posterGirl', '1')
+
+    const pio = pioRef.current
+    if (pio && typeof pio.init === 'function') {
+      try {
+        pio.init(true) // pass true to skip loading model again
+        const body = document.querySelector('.pio-container')
+        if (body) {
+          body.classList.remove('hidden')
+        }
+      } catch (err) {
+        console.error('Failed to reinit pio:', err)
+      }
+    }
+  }
+
+  // Listen for destroy event from pio.js
+  useEffect(() => {
+    const checkHiddenStatus = setInterval(() => {
+      const body = document.querySelector('.pio-container')
+      if (body && body.classList.contains('hidden')) {
+        setShowAvatar(true)
+        setPioVisible(false)
+      }
+    }, 500)
+
+    return () => clearInterval(checkHiddenStatus)
+  }, [])
+
   return (
     <div
       className="pio-container left"
-      style={{ zIndex: 60, display: pioVisible ? undefined : 'none' }}
+      style={{ zIndex: 60, display: 'block' }}
     >
       <div className="pio-action" />
       {canvasPresent && (
@@ -215,6 +224,18 @@ export default function Live2DWidget(): JSX.Element | null {
           width={280}
           height={250}
           style={{ display: pioVisible ? undefined : 'none' }}
+        />
+      )}
+      {showAvatar && (
+        <div
+          className="pio-show"
+          onClick={handleAvatarClick}
+          style={{
+            backgroundImage: 'url(/assets/live2d/static/avatar.jpg)',
+            cursor: 'pointer',
+            opacity: showAvatar ? 1 : 0,
+            transition: 'opacity 0.5s ease-in-out, transform 0.3s ease',
+          }}
         />
       )}
     </div>
