@@ -188,7 +188,7 @@ export default function Live2DWidget(): JSX.Element | null {
     const pio = pioRef.current
     if (pio && typeof pio.init === 'function') {
       try {
-        pio.init(true) // pass true to skip loading model again
+        pio.init() // pass true to skip loading model again
         const body = document.querySelector('.pio-container')
         if (body) {
           body.classList.remove('hidden')
