@@ -6,7 +6,7 @@ import { WebParticles } from './Dark'
 import { FloatingParticles } from './Light'
 
 export const BackgroundLayer: React.FC = () => {
-  const { theme } = useTheme()
+  const { theme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export const BackgroundLayer: React.FC = () => {
       />
     )
   }
-
+  const currentTheme = theme === 'system' ? resolvedTheme : theme
   return (
     <div
       style={{
@@ -36,7 +36,7 @@ export const BackgroundLayer: React.FC = () => {
         zIndex: 0,
       }}
     >
-      {theme === 'dark' ? <WebParticles /> : <FloatingParticles />}
+      {currentTheme === 'dark' ? <WebParticles /> : <FloatingParticles />}
     </div>
   )
 }
