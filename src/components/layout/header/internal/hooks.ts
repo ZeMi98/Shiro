@@ -31,7 +31,7 @@ export const useHeaderBgOpacity = () => {
       if (y < threshold) return 0
       return headerShouldShowBg
         ? y >= distance + threshold
-          ? 1
+          ? 0.88
           : Math.floor(((y - threshold) / distance) * 100) / 100
         : 0
     },
