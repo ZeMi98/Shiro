@@ -150,7 +150,7 @@ export const generateMetadata = async ({
         card: 'summary_large_image',
       },
       alternates: {
-        canonical: `https://xming.cyou/notes/${params.id}`,
+        canonical: `https://xming.cyou/notes/${resolvedParams.id}`,
       },
     } satisfies Metadata
   } catch {
