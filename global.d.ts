@@ -7,10 +7,18 @@ declare global {
   }
   export type NextPageParams<P extends {}, Props = {}> = PropsWithChildren<
     {
-      params: P
+      params: Promise<P>
     } & Props
   >
 
+  export type NextPageExtractedParams<
+    P extends {},
+    Props = {},
+  > = PropsWithChildren<
+    {
+      params: P
+    } & Props
+  >
   export type Component<P = {}> = FC<ComponentType & P>
 
   export type ComponentType<P = {}> = {

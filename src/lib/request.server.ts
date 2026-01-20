@@ -7,6 +7,7 @@ import { createElement } from 'react'
 
 import { BizErrorPage } from '~/components/common/BizErrorPage'
 import { NormalContainer } from '~/components/layout/container/Normal'
+import { API_URL } from '~/constants/env'
 
 import { attachServerFetch } from './attach-fetch'
 import { getErrorMessageFromRequestError } from './request.shared'
@@ -21,19 +22,18 @@ export const requestErrorHandler = (error: Error | RequestError) => {
   throw error
 }
 
-const defaultErrorRenderer = (error: any) => {
-  return createElement(
+const defaultErrorRenderer = (error: any) =>
+  createElement(
     NormalContainer,
     null,
     createElement(
       'p',
       {
-        className: 'text-center text-red-500',
+        className: 'text-center',
       },
-      error.message,
+      error.message?.replace(API_URL, '<API_URL>'),
     ),
   )
-}
 
 export const definePrerenderPage =
   <Params extends {}>() =>
@@ -48,7 +48,14 @@ export const definePrerenderPage =
       },
       params: Params,
     ) => ReactNode | void
-    Component: FC<NextPageParams<Params> & { data: T }>
+    Component: FC<
+      NextPageExtractedParams<Params> & {
+        data: T
+        fetchedAt: string
+        searchParams: any
+      }
+    >
+
     handleNotFound?: boolean
   }) => {
     const {
@@ -58,28 +65,36 @@ export const definePrerenderPage =
       handleNotFound = true,
     } = options
     return async (props: any) => {
-      const { params, searchParams } = props as NextPageParams<Params, any>
+      const { params: params_, searchParams: searchParams_ } =
+        props as NextPageParams<Params, any>
+      const params = await params_
+      const searchParams = await searchParams_
 
       try {
-        attachServerFetch()
+        await attachServerFetch()
         const data = await fetcher({
           ...params,
           ...searchParams,
         })
 
         return createElement(
-          Component,
+          await Component,
           {
             data,
+            fetchedAt: new Date().toISOString(),
             ...props,
+            params: {
+              ...params,
+              ...searchParams,
+            },
           },
           props.children,
         )
       } catch (error: any) {
         // 如果在内部已经处理了 NEXT_NOT_FOUND，就不再处理
-
-        if (error?.message === 'NEXT_NOT_FOUND') {
-          notFound()
+        // @see next/packages/next/src/client/components/http-access-fallback/http-access-fallback.ts
+        if (error?.message === 'NEXT_HTTP_ERROR_FALLBACK;404') {
+          throw error
         }
 
         if (error instanceof RequestError) {
